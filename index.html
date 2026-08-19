@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
     
+    <!-- YouTube Iframe API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+
     <style>
         /* General Setup */
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
@@ -23,12 +26,40 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
+        /* Menu Toggle Button (Left) */
+        #menu-toggle {
+            position: absolute;
+            left: 15px;
+            cursor: pointer;
+            font-size: 24px;
+            user-select: none;
+            transition: color 0.2s;
+        }
+        #menu-toggle:hover { color: #ccc; }
+
+        /* Music Toggle Button (Right) */
+        #music-toggle {
+            position: absolute;
+            right: 15px;
+            cursor: pointer;
+            font-size: 22px;
+            user-select: none;
+            transition: color 0.2s;
+        }
+        #music-toggle:hover { color: #ccc; }
+
         /* Modern Side Menu */
         #side-menu {
             position: absolute; top: 50px; left: 0; width: 250px; height: calc(100vh - 50px);
             background-color: rgba(75, 82, 89, 0.9);
             color: white; overflow-y: auto; z-index: 10;
             backdrop-filter: blur(5px);
+            transition: transform 0.3s ease-in-out; /* Smooth slide animation */
+        }
+
+        /* Class to hide the menu */
+        #side-menu.hidden {
+            transform: translateX(-100%);
         }
 
         .menu-item {
@@ -77,12 +108,22 @@
         }
 
         .custom-arrow:hover span { visibility: visible; opacity: 1; }
+
+        /* Mobile tweaks */
+        @media (max-width: 768px) {
+            #top-title { font-size: 16px; }
+        }
     </style>
 </head>
 <body>
 
 <!-- Custom UI Overlays -->
-<div id="top-bar"><span id="top-title">Top View</span></div>
+<div id="top-bar">
+    <div id="menu-toggle" onclick="toggleMenu()">☰</div>
+    <span id="top-title">Top View</span>
+    <!-- Music toggle button added here -->
+    <div id="music-toggle" onclick="toggleMusic()">🔇</div> 
+</div>
 
 <div id="side-menu">
     <div class="menu-item" onclick="changeScene('scene1')">Top View</div>
@@ -104,7 +145,72 @@
 
 <div id="panorama"></div>
 
+<!-- Hidden div for YouTube Player -->
+<div id="ytplayer" style="display:none;"></div>
+
 <script>
+    // --- YOUTUBE AUDIO BACKGROUND LOGIC ---
+    let player;
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('ytplayer', {
+            height: '0', 
+            width: '0',
+            videoId: '312SQ9kea8M',
+            playerVars: { 
+                'autoplay': 1, 
+                'start': 579,  // 9:39 in seconds
+                'end': 2525,   // 42:05 in seconds
+                'controls': 0,
+                'rel': 0,
+                'showinfo': 0,
+                'enablejsapi': 1
+            },
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
+            }
+        });
+    }
+
+    function onPlayerReady(event) {
+        // Try to start the music right away
+        event.target.playVideo();
+    }
+
+    function onPlayerStateChange(event) {
+        const musicIcon = document.getElementById('music-toggle');
+        // Update icon based on play state
+        if (event.data === YT.PlayerState.PLAYING) {
+            musicIcon.innerText = '🔊';
+        } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.UNSTARTED) {
+            musicIcon.innerText = '🔇';
+        } else if (event.data === YT.PlayerState.ENDED) {
+            // When the video hits the end time (42:05), loop it back to the start time (9:39)
+            player.seekTo(579);
+            player.playVideo();
+        }
+    }
+
+    function toggleMusic() {
+        if (player && player.getPlayerState) {
+            if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+                player.pauseVideo();
+            } else {
+                player.playVideo();
+            }
+        }
+    }
+
+    // Auto-play workaround: Browsers block audio until the user interacts with the page.
+    // This will start the music on the user's first click anywhere on the screen if it was blocked.
+    document.body.addEventListener('click', function() {
+        if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
+            player.playVideo();
+        }
+    }, { once: true });
+
+
+    // --- UI AND VIRTUAL TOUR LOGIC ---
     const sceneTitles = {
         "scene1": "Top View", "scene2": "Top View from Entry", "scene3": "Entrance from Road",
         "scene4": "Main Gate", "scene5": "Parking Entry", "scene6": "Parking Circle",
@@ -113,7 +219,17 @@
         "scene13": "Umbrella Tree", "scene14": "Back side Pratishthan O...", "scene15": "Back side Garden"
     };
 
-    // Modified to accept exact angle degrees to rotate the arrow graphic
+    // Auto-hide menu on mobile devices so it doesn't block the screen
+    if (window.innerWidth <= 768) {
+        document.getElementById('side-menu').classList.add('hidden');
+    }
+
+    // Toggle menu visibility
+    function toggleMenu() {
+        const sideMenu = document.getElementById('side-menu');
+        sideMenu.classList.toggle('hidden');
+    }
+
     function hotspotTooltip(hotSpotDiv, args) {
         hotSpotDiv.classList.add('custom-tooltip');
         var span = document.createElement('span');
@@ -252,6 +368,11 @@
     function changeScene(sceneId) {
         viewer.loadScene(sceneId);
         document.getElementById('top-title').innerText = sceneTitles[sceneId];
+        
+        // On mobile, auto-close the menu after clicking a location
+        if (window.innerWidth <= 768) {
+            document.getElementById('side-menu').classList.add('hidden');
+        }
     }
 
     viewer.on('scenechange', function(sceneId) {
