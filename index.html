@@ -76,9 +76,12 @@
             opacity: 0; transition: opacity 0.3s; pointer-events: none;
         }
 
+        /* Custom Arrow Directions */
         .custom-arrow.arrow-up::after { transform: rotate(-45deg); margin-left: 0; margin-top: 4px; }
         .custom-arrow.arrow-left::after { transform: rotate(-135deg); margin-left: 4px; }
         .custom-arrow.arrow-right::after { transform: rotate(45deg); margin-left: -4px; }
+        .custom-arrow.arrow-back::after { transform: rotate(135deg); margin-top: -4px; margin-left: -4px; }
+        
         .custom-arrow:hover span { visibility: visible; opacity: 1; }
     </style>
 </head>
@@ -136,8 +139,8 @@
             "scene1": {
                 "type": "equirectangular", "panorama": "images/pano1.jpg", "pitch": -20, "yaw": 60,
                 "hotSpots": [ 
-                    { "pitch": 0, "yaw": 100, "type": "scene", "sceneId": "scene2", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Top View from Entry" },
-                    { "pitch": -68.46, "yaw": 85.05, "type": "scene", "sceneId": "scene3", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Entrance from Road" }
+                    { "pitch": -8.28, "yaw": 80.81, "type": "scene", "sceneId": "scene2", "cssClass": "custom-arrow arrow-up", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Top View from Entry" },
+                    { "pitch": -68.46, "yaw": 85.05, "type": "scene", "sceneId": "scene3", "cssClass": "custom-arrow arrow-back", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Entrance from Road" }
                 ]
             },
             "scene2": {
