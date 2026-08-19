@@ -17,54 +17,63 @@
         /* Modern Top Bar */
         #top-bar {
             position: absolute; top: 0; left: 0; width: 100%; height: 50px;
-            background-color: #4B5259;
-            color: white; display: flex; align-items: center; justify-content: center;
+            background-color: #4B5259; color: white; 
+            display: flex; align-items: center; justify-content: center;
             font-size: 18px; font-weight: 600; z-index: 10;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
+
+        /* Edit Mode Toggle Button */
+        #edit-toggle {
+            position: absolute; right: 20px;
+            background-color: #e74c3c; color: white; border: none;
+            padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;
+            transition: 0.3s;
+        }
+        #edit-toggle:hover { background-color: #c0392b; }
+
+        /* Pop-up Angle Editor */
+        #angle-editor {
+            display: none; position: absolute; z-index: 100;
+            background: #2c3e50; color: white; padding: 15px;
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 220px; border: 2px solid #34495e;
+        }
+        #angle-editor input[type="range"] { width: 100%; margin: 15px 0; }
+        .close-editor-btn { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; width: 100%; }
 
         /* Modern Side Menu */
         #side-menu {
             position: absolute; top: 50px; left: 0; width: 250px; height: calc(100vh - 50px);
             background-color: rgba(75, 82, 89, 0.9);
-            color: white; overflow-y: auto; z-index: 10;
-            backdrop-filter: blur(5px);
+            color: white; overflow-y: auto; z-index: 10; backdrop-filter: blur(5px);
         }
 
         .menu-item {
             padding: 15px 20px; font-size: 14px; cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            transition: background 0.3s;
+            border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.3s;
         }
-
         .menu-item:hover { background-color: rgba(255,255,255,0.2); }
 
         /* Hide Pannellum's default elements */
         .pnlm-title-box, .pnlm-zoom-controls, .pnlm-fullscreen-toggle { display: none !important; }
 
-        /* --- NEW DYNAMIC ARROW CSS --- */
-        .custom-hotspot-base {
-            width: 46px; height: 46px;
-            cursor: pointer; position: relative;
-        }
+        /* DYNAMIC ARROW CSS */
+        .custom-hotspot-base { width: 46px; height: 46px; cursor: pointer; position: relative; }
 
-        /* The circle containing the arrow */
         .arrow-icon {
             width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.55);
             border: 2px solid rgba(255,255,255,0.95); border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            box-sizing: border-box;
-            transition: background-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box; transition: background-color 0.2s, box-shadow 0.2s;
         }
 
-        /* The arrow shape itself */
         .arrow-icon::after {
             content: ''; display: block;
             width: 12px; height: 12px;
             border-top: 3px solid white; border-right: 3px solid white;
-            transform: rotate(-45deg); /* Default points UP */
-            margin-top: 4px;
+            transform: rotate(-45deg); margin-top: 4px;
         }
         
         .custom-hotspot-base:hover .arrow-icon {
@@ -72,26 +81,33 @@
             box-shadow: 0 0 0 4px rgba(255,255,255,0.16);
         }
 
-        /* Tooltip text */
         .tooltip-text {
             visibility: hidden; position: absolute;
             top: -35px; left: 50%; transform: translateX(-50%);
             background-color: rgba(0,0,0,0.8); color: white;
             padding: 5px 10px; border-radius: 4px;
             white-space: nowrap; font-size: 13px; font-weight: 500;
-            opacity: 0; transition: opacity 0.3s; pointer-events: none;
-            z-index: 20;
+            opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 20;
         }
 
-        .custom-hotspot-base:hover .tooltip-text {
-            visibility: visible; opacity: 1;
-        }
+        .custom-hotspot-base:hover .tooltip-text { visibility: visible; opacity: 1; }
     </style>
 </head>
 <body>
 
 <!-- Custom UI Overlays -->
-<div id="top-bar"><span id="top-title">Top View</span></div>
+<div id="top-bar">
+    <span id="top-title">Top View</span>
+    <button id="edit-toggle">Enable Edit Mode</button>
+</div>
+
+<!-- The Angle Editor Pop-up -->
+<div id="angle-editor">
+    <div style="font-size:14px; font-weight:bold;">Angle: <span id="angle-val">0°</span></div>
+    <input type="range" id="angle-slider" min="-180" max="180" value="0">
+    <div style="font-size:11px; margin-bottom:10px; color:#bdc3c7;">Update your code with this number!</div>
+    <button class="close-editor-btn" onclick="document.getElementById('angle-editor').style.display='none'">Close</button>
+</div>
 
 <div id="side-menu">
     <div class="menu-item" onclick="changeScene('scene1')">Top View</div>
@@ -122,23 +138,58 @@
         "scene13": "Umbrella Tree", "scene14": "Back side Pratishthan O...", "scene15": "Back side Garden"
     };
 
-    // --- NEW DYNAMIC HOTSPOT FUNCTION ---
+    // Global variable for Edit Mode
+    let isEditMode = false;
+    document.getElementById('edit-toggle').onclick = function() {
+        isEditMode = !isEditMode;
+        this.innerText = isEditMode ? "Exit Edit Mode" : "Enable Edit Mode";
+        this.style.backgroundColor = isEditMode ? "#27ae60" : "#e74c3c";
+        if(!isEditMode) document.getElementById('angle-editor').style.display = 'none';
+    };
+
     function createCustomHotspot(hotSpotDiv, args) {
         hotSpotDiv.classList.add('custom-hotspot-base');
         
-        // Build the circle and apply the custom rotation angle
+        // Build the circle and apply the initial angle
         var icon = document.createElement('div');
         icon.classList.add('arrow-icon');
-        if(args.angle !== undefined) {
-            icon.style.transform = 'rotate(' + args.angle + 'deg)';
-        }
+        icon.dataset.angle = args.angle !== undefined ? args.angle : 0; 
+        icon.style.transform = 'rotate(' + icon.dataset.angle + 'deg)';
         hotSpotDiv.appendChild(icon);
 
-        // Build the tooltip text (so it doesn't rotate with the arrow)
+        // Build the tooltip text
         var span = document.createElement('span');
         span.innerHTML = args.text;
         span.classList.add('tooltip-text');
         hotSpotDiv.appendChild(span);
+
+        // Custom Click Handler (Handles both navigation AND edit mode)
+        hotSpotDiv.addEventListener('click', function(e) {
+            if (isEditMode) {
+                // Open Editor
+                const editor = document.getElementById('angle-editor');
+                editor.style.display = 'block';
+                
+                // Position popup near the click
+                editor.style.left = (e.clientX + 10) + 'px';
+                editor.style.top = (e.clientY + 10) + 'px';
+                
+                // Update Slider
+                const slider = document.getElementById('angle-slider');
+                slider.value = icon.dataset.angle;
+                document.getElementById('angle-val').innerText = icon.dataset.angle + '°';
+                
+                // When slider moves, spin the arrow instantly
+                slider.oninput = function() {
+                    icon.style.transform = 'rotate(' + this.value + 'deg)';
+                    icon.dataset.angle = this.value;
+                    document.getElementById('angle-val').innerText = this.value + '°';
+                };
+            } else {
+                // Navigate normally if Edit Mode is OFF
+                changeScene(args.target);
+            }
+        });
     }
 
     const viewer = pannellum.viewer('panorama', {
@@ -154,109 +205,109 @@
             "scene1": {
                 "type": "equirectangular", "panorama": "images/pano1.jpg", "pitch": -20, "yaw": 60,
                 "hotSpots": [ 
-                    { "pitch": -8.28, "yaw": 80.81, "type": "scene", "sceneId": "scene2", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Top View from Entry", angle: 0 } },
-                    { "pitch": -68.46, "yaw": 85.05, "type": "scene", "sceneId": "scene3", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Entrance from Road", angle: 180 } }
+                    { "pitch": -8.28, "yaw": 80.81, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene2", text: "Top View from Entry", angle: 0 } },
+                    { "pitch": -68.46, "yaw": 85.05, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene3", text: "Entrance from Road", angle: 180 } }
                 ]
             },
             "scene2": {
                 "type": "equirectangular", "panorama": "images/pano2.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [ 
-                    { "pitch": -16.19, "yaw": -63.43, "type": "scene", "sceneId": "scene3", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Entrance from Road", angle: 180 } },
-                    { "pitch": -14.44, "yaw": 50.88, "type": "scene", "sceneId": "scene10", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Golden Gate", angle: 0 } } 
+                    { "pitch": -16.19, "yaw": -63.43, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene3", text: "Entrance from Road", angle: 180 } },
+                    { "pitch": -14.44, "yaw": 50.88, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene10", text: "Golden Gate", angle: 0 } } 
                 ]
             },
             "scene3": {
                 "type": "equirectangular", "panorama": "images/pano3.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [ 
-                    { "pitch": 5.80, "yaw": 123.10, "type": "scene", "sceneId": "scene2", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Top View from Entry", angle: 180 } },
-                    { "pitch": -24.58, "yaw": 2.32, "type": "scene", "sceneId": "scene4", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Main Gate", angle: 0 } } 
+                    { "pitch": 5.80, "yaw": 123.10, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene2", text: "Top View from Entry", angle: 180 } },
+                    { "pitch": -24.58, "yaw": 2.32, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene4", text: "Main Gate", angle: 0 } } 
                 ]
             },
             "scene4": {
                 "type": "equirectangular", "panorama": "images/pano4.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [ 
-                    { "pitch": -21.64, "yaw": 174.63, "type": "scene", "sceneId": "scene3", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Entrance from Road", angle: 180 } },
-                    { "pitch": -11.32, "yaw": -0.08, "type": "scene", "sceneId": "scene5", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Parking Entry", angle: 0 } } 
+                    { "pitch": -21.64, "yaw": 174.63, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene3", text: "Entrance from Road", angle: 180 } },
+                    { "pitch": -11.32, "yaw": -0.08, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene5", text: "Parking Entry", angle: 0 } } 
                 ]
             },
             "scene5": {
                 "type": "equirectangular", "panorama": "images/pano5.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [ 
-                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene4", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Main Gate", angle: 180 } },
-                    { "pitch": -18.85, "yaw": -0.71, "type": "scene", "sceneId": "scene6", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Parking Circle", angle: 0 } } 
+                    { "pitch": 0, "yaw": -100, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene4", text: "Main Gate", angle: 180 } },
+                    { "pitch": -18.85, "yaw": -0.71, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene6", text: "Parking Circle", angle: 0 } } 
                 ]
             },
             "scene6": {
                 "type": "equirectangular", "panorama": "images/pano6.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [ 
-                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene5", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Parking Entry", angle: 180 } },
-                    { "pitch": -4.97, "yaw": 7.22, "type": "scene", "sceneId": "scene7", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Entrance from Lawn", angle: 0 } } 
+                    { "pitch": 0, "yaw": -100, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene5", text: "Parking Entry", angle: 180 } },
+                    { "pitch": -4.97, "yaw": 7.22, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene7", text: "Entrance from Lawn", angle: 0 } } 
                 ]
             },
             "scene7": {
                 "type": "equirectangular", "panorama": "images/pano7.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [ 
-                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene6", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Parking Circle", angle: 180 } },
-                    { "pitch": -4.63, "yaw": 50.59, "type": "scene", "sceneId": "scene8", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Pratishthan front view", angle: 90 } } 
+                    { "pitch": 0, "yaw": -100, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene6", text: "Parking Circle", angle: 180 } },
+                    { "pitch": -4.63, "yaw": 50.59, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene8", text: "Pratishthan front view", angle: 90 } } 
                 ]
             },
             "scene8": {
                 "type": "equirectangular", "panorama": "images/pano8.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [ 
-                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene7", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Entrance from Lawn", angle: 180 } },
-                    { "pitch": -22.69, "yaw": 95.26, "type": "scene", "sceneId": "scene9", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Main Lawn Stage", angle: 0 } },
-                    { "pitch": -6.21, "yaw": 114.51, "type": "scene", "sceneId": "scene10", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Golden Gate", angle: 90 } } 
+                    { "pitch": 0, "yaw": -100, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene7", text: "Entrance from Lawn", angle: 180 } },
+                    { "pitch": -22.69, "yaw": 95.26, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene9", text: "Main Lawn Stage", angle: 0 } },
+                    { "pitch": -6.21, "yaw": 114.51, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene10", text: "Golden Gate", angle: 90 } } 
                 ]
             },
             "scene9": {
                 "type": "equirectangular", "panorama": "images/pano9.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [
-                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene8", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Pratishthan front view", angle: 180 } },
-                    { "pitch": -13.16, "yaw": 33.52, "type": "scene", "sceneId": "scene10", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Golden Gate", angle: 90 } }
+                    { "pitch": 0, "yaw": -100, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene8", text: "Pratishthan front view", angle: 180 } },
+                    { "pitch": -13.16, "yaw": 33.52, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene10", text: "Golden Gate", angle: 90 } }
                 ]
             },
             "scene10": {
                 "type": "equirectangular", "panorama": "images/pano10.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [
-                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene9", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Main Lawn Stage", angle: 180 } },
-                    { "pitch": -6.71, "yaw": 3.53, "type": "scene", "sceneId": "scene11", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Ganesh Dwar", angle: 0 } }
+                    { "pitch": 0, "yaw": -100, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene9", text: "Main Lawn Stage", angle: 180 } },
+                    { "pitch": -6.71, "yaw": 3.53, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene11", text: "Ganesh Dwar", angle: 0 } }
                 ]
             },
             "scene11": {
                 "type": "equirectangular", "panorama": "images/pano11.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [
-                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene10", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Golden Gate", angle: 180 } },
-                    { "pitch": -10.91, "yaw": -10.73, "type": "scene", "sceneId": "scene12", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Quawalli Hall", angle: -90 } },
-                    { "pitch": -4.20, "yaw": 74.49, "type": "scene", "sceneId": "scene13", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Umbrella Tree", angle: 90 } }
+                    { "pitch": 0, "yaw": -100, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene10", text: "Golden Gate", angle: 180 } },
+                    { "pitch": -10.91, "yaw": -10.73, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene12", text: "Quawalli Hall", angle: -90 } },
+                    { "pitch": -4.20, "yaw": 74.49, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene13", text: "Umbrella Tree", angle: 90 } }
                 ]
             },
             "scene12": {
                 "type": "equirectangular", "panorama": "images/pano12.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [
-                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene11", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Ganesh Dwar", angle: 180 } },
-                    { "pitch": -10.01, "yaw": -66.76, "type": "scene", "sceneId": "scene13", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Umbrella Tree", angle: -90 } } 
+                    { "pitch": 0, "yaw": -100, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene11", text: "Ganesh Dwar", angle: 180 } },
+                    { "pitch": -10.01, "yaw": -66.76, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene13", text: "Umbrella Tree", angle: -90 } } 
                 ]
             },
             "scene13": {
                 "type": "equirectangular", "panorama": "images/pano13.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [
-                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene12", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Quawalli Hall", angle: 180 } },
-                    { "pitch": -12.36, "yaw": -7.45, "type": "scene", "sceneId": "scene14", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Back side Pratishthan", angle: 0 } },
-                    { "pitch": -9.73, "yaw": -23.22, "type": "scene", "sceneId": "scene15", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Back side Garden", angle: -90 } }
+                    { "pitch": 0, "yaw": -100, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene12", text: "Quawalli Hall", angle: 180 } },
+                    { "pitch": -12.36, "yaw": -7.45, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene14", text: "Back side Pratishthan", angle: 0 } },
+                    { "pitch": -9.73, "yaw": -23.22, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene15", text: "Back side Garden", angle: -90 } }
                 ]
             },
             "scene14": {
                 "type": "equirectangular", "panorama": "images/pano14.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [ 
-                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene13", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Umbrella Tree", angle: 180 } },
-                    { "pitch": -15.33, "yaw": -161.12, "type": "scene", "sceneId": "scene15", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Back side Garden", angle: 0 } } 
+                    { "pitch": 0, "yaw": -100, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene13", text: "Umbrella Tree", angle: 180 } },
+                    { "pitch": -15.33, "yaw": -161.12, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene15", text: "Back side Garden", angle: 0 } } 
                 ]
             },
             "scene15": {
                 "type": "equirectangular", "panorama": "images/pano15.jpg", "pitch": 0, "yaw": 0,
                 "hotSpots": [ 
-                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene14", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Back side Pratishthan", angle: 180 } },
-                    { "pitch": 0, "yaw": 100, "type": "scene", "sceneId": "scene1", "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { text: "Top View", angle: 0 } } 
+                    { "pitch": 0, "yaw": -100, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene14", text: "Back side Pratishthan", angle: 180 } },
+                    { "pitch": 0, "yaw": 100, "createTooltipFunc": createCustomHotspot, "createTooltipArgs": { target: "scene1", text: "Top View", angle: 0 } } 
                 ]
             }
         }
