@@ -34,19 +34,33 @@
             font-size: 24px;
             user-select: none;
             transition: color 0.2s;
+            display: flex;
+            align-items: center;
         }
         #menu-toggle:hover { color: #ccc; }
 
-        /* Music Toggle Button (Right) */
+        /* Modern Music Toggle Button (Right) */
         #music-toggle {
             position: absolute;
             right: 15px;
             cursor: pointer;
-            font-size: 22px;
-            user-select: none;
-            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s, color 0.2s;
         }
-        #music-toggle:hover { color: #ccc; }
+        #music-toggle:hover { opacity: 0.7; }
+        
+        /* SVG Icon styling */
+        .music-icon {
+            width: 22px;
+            height: 22px;
+            stroke: white;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
 
         /* Modern Side Menu */
         #side-menu {
@@ -89,7 +103,7 @@
             box-shadow: 0 0 0 4px rgba(255,255,255,0.16);
         }
 
-        /* The actual arrow shape inside the circle (Modified to accept dynamic CSS variable) */
+        /* The actual arrow shape inside the circle */
         .custom-arrow::after {
             content: ''; display: block;
             width: 12px; height: 12px;
@@ -121,8 +135,15 @@
 <div id="top-bar">
     <div id="menu-toggle" onclick="toggleMenu()">☰</div>
     <span id="top-title">Top View</span>
-    <!-- Music toggle button added here -->
-    <div id="music-toggle" onclick="toggleMusic()">🔇</div> 
+    <!-- Modern SVG Music toggle button -->
+    <div id="music-toggle" onclick="toggleMusic()">
+        <!-- Default: Music Playing Icon -->
+        <svg id="icon-playing" class="music-icon" viewBox="0 0 24 24">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+        </svg>
+    </div> 
 </div>
 
 <div id="side-menu">
@@ -151,6 +172,11 @@
 <script>
     // --- YOUTUBE AUDIO BACKGROUND LOGIC ---
     let player;
+    
+    // SVG strings for the toggle states
+    const iconPlaying = `<svg class="music-icon" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
+    const iconPaused = `<svg class="music-icon" viewBox="0 0 24 24" style="stroke: #ff6b6b;"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('ytplayer', {
             height: '0', 
@@ -173,19 +199,20 @@
     }
 
     function onPlayerReady(event) {
-        // Try to start the music right away
+        // Force play immediately on load
         event.target.playVideo();
     }
 
     function onPlayerStateChange(event) {
-        const musicIcon = document.getElementById('music-toggle');
-        // Update icon based on play state
+        const musicToggleBtn = document.getElementById('music-toggle');
+        
+        // Update modern icon based on play state
         if (event.data === YT.PlayerState.PLAYING) {
-            musicIcon.innerText = '🔊';
+            musicToggleBtn.innerHTML = iconPlaying;
         } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.UNSTARTED) {
-            musicIcon.innerText = '🔇';
+            musicToggleBtn.innerHTML = iconPaused;
         } else if (event.data === YT.PlayerState.ENDED) {
-            // When the video hits the end time (42:05), loop it back to the start time (9:39)
+            // Loop back to start time (9:39) when it reaches end time
             player.seekTo(579);
             player.playVideo();
         }
@@ -201,8 +228,7 @@
         }
     }
 
-    // Auto-play workaround: Browsers block audio until the user interacts with the page.
-    // This will start the music on the user's first click anywhere on the screen if it was blocked.
+    // Auto-play workaround: Starts music if the browser blocked it on initial load
     document.body.addEventListener('click', function() {
         if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) {
             player.playVideo();
@@ -219,12 +245,11 @@
         "scene13": "Umbrella Tree", "scene14": "Back side Pratishthan O...", "scene15": "Back side Garden"
     };
 
-    // Auto-hide menu on mobile devices so it doesn't block the screen
+    // Auto-hide menu on mobile devices
     if (window.innerWidth <= 768) {
         document.getElementById('side-menu').classList.add('hidden');
     }
 
-    // Toggle menu visibility
     function toggleMenu() {
         const sideMenu = document.getElementById('side-menu');
         sideMenu.classList.toggle('hidden');
