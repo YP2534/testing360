@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern 360 Virtual Tour</title>
+    
+    <!-- Pannellum Library -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    
+    <style>
+        /* General Setup */
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        #panorama { width: 100vw; height: 100vh; }
+
+        /* Modern Top Bar */
+        #top-bar {
+            position: absolute; top: 0; left: 0; width: 100%; height: 50px;
+            background-color: #4B5259;
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 600; z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        /* Modern Side Menu */
+        #side-menu {
+            position: absolute; top: 50px; left: 0; width: 250px; height: calc(100vh - 50px);
+            background-color: rgba(75, 82, 89, 0.9);
+            color: white; overflow-y: auto; z-index: 10;
+            backdrop-filter: blur(5px);
+        }
+
+        .menu-item {
+            padding: 15px 20px; font-size: 14px; cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: background 0.3s;
+        }
+
+        .menu-item:hover { background-color: rgba(255,255,255,0.2); }
+
+        /* Hide Pannellum's default title, zoom, and fullscreen controls */
+        .pnlm-title-box, .pnlm-zoom-controls, .pnlm-fullscreen-toggle { display: none !important; }
+
+        /* Custom Stable Arrow Icon with Tooltip Setup */
+        .custom-arrow {
+            width: 46px; height: 46px;
+            background-color: rgba(0, 0, 0, 0.55);
+            border: 2px solid rgba(255,255,255,0.95); border-radius: 50%;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-sizing: border-box;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            will-change: background-color;
+        }
+        
+        .custom-arrow:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 0 4px rgba(255,255,255,0.16);
+        }
+
+        /* The actual arrow shape inside the circle */
+        .custom-arrow::after {
+            content: ''; display: block;
+            width: 12px; height: 12px;
+            border-top: 3px solid white; border-right: 3px solid white;
+            transform: rotate(45deg); margin-left: -4px;
+        }
+
+        /* Tooltip text that appears on hover */
+        .custom-arrow span {
+            visibility: hidden; position: absolute;
+            top: -35px; left: 50%; transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.8); color: white;
+            padding: 5px 10px; border-radius: 4px;
+            white-space: nowrap; font-size: 13px; font-weight: 500;
+            opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
+
+        .custom-arrow.arrow-up::after {
+            transform: rotate(-45deg);
+            margin-left: 0;
+            margin-top: 4px;
+        }
+
+        .custom-arrow.arrow-left::after {
+            transform: rotate(-135deg);
+            margin-left: 4px;
+        }
+
+        .custom-arrow.arrow-right::after {
+            transform: rotate(45deg);
+            margin-left: -4px;
+        }
+
+        .custom-arrow:hover span {
+            visibility: visible; opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Custom UI Overlays -->
+<div id="top-bar"><span id="top-title">Top View</span></div>
+
+<div id="side-menu">
+    <div class="menu-item" onclick="changeScene('scene1')">Top View</div>
+    <div class="menu-item" onclick="changeScene('scene2')">Top View from Entry</div>
+    <div class="menu-item" onclick="changeScene('scene3')">Entrance from Road</div>
+    <div class="menu-item" onclick="changeScene('scene4')">Main Gate</div>
+    <div class="menu-item" onclick="changeScene('scene5')">Parking Entry</div>
+    <div class="menu-item" onclick="changeScene('scene6')">Parking Circle</div>
+    <div class="menu-item" onclick="changeScene('scene7')">Entrance from Lawn</div>
+    <div class="menu-item" onclick="changeScene('scene8')">Pratishthan front view</div>
+    <div class="menu-item" onclick="changeScene('scene9')">Main Lawn Stage</div>
+    <div class="menu-item" onclick="changeScene('scene10')">Golden Gate</div>
+    <div class="menu-item" onclick="changeScene('scene11')">Ganesh Dwar</div>
+    <div class="menu-item" onclick="changeScene('scene12')">Quawalli Hall</div>
+    <div class="menu-item" onclick="changeScene('scene13')">Umbrella Tree</div>
+    <div class="menu-item" onclick="changeScene('scene14')">Back side Pratishthan O...</div>
+    <div class="menu-item" onclick="changeScene('scene15')">Back side Garden</div>
+</div>
+
+<div id="panorama"></div>
+
+<script>
+    const sceneTitles = {
+        "scene1": "Top View", "scene2": "Top View from Entry", "scene3": "Entrance from Road",
+        "scene4": "Main Gate", "scene5": "Parking Entry", "scene6": "Parking Circle",
+        "scene7": "Entrance from Lawn", "scene8": "Pratishthan front view", "scene9": "Main Lawn Stage",
+        "scene10": "Golden Gate", "scene11": "Ganesh Dwar", "scene12": "Quawalli Hall",
+        "scene13": "Umbrella Tree", "scene14": "Back side Pratishthan O...", "scene15": "Back side Garden"
+    };
+
+    function hotspotTooltip(hotSpotDiv, args) {
+        hotSpotDiv.classList.add('custom-tooltip');
+        var span = document.createElement('span');
+        span.innerHTML = args;
+        hotSpotDiv.appendChild(span);
+    }
+
+    const viewer = pannellum.viewer('panorama', {
+        "default": {
+            "firstScene": "scene1",
+            "sceneFadeDuration": 1000,
+            "autoLoad": true,
+            "hfov": 100,
+            "showZoomCtrl": false,       
+            "showFullscreenCtrl": false
+        },
+        "scenes": {
+            "scene1": {
+                "type": "equirectangular", "panorama": "images/pano1.jpg", "pitch": -20, "yaw": 60,
+                "hotSpots": [ 
+                    { "pitch": 0, "yaw": 100, "type": "scene", "sceneId": "scene2", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Top View from Entry" },
+                    { "pitch": -73.22, "yaw": -48.01, "type": "scene", "sceneId": "scene3", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Entrance from Road" }
+                ]
+            },
+            "scene2": {
+                "type": "equirectangular", "panorama": "images/pano2.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [ 
+                    { "pitch": 0, "yaw": 100, "type": "scene", "sceneId": "scene3", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Entrance from Road" },
+                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene10", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Golden Gate" } 
+                ]
+            },
+            "scene3": {
+                "type": "equirectangular", "panorama": "images/pano3.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [ 
+                    { "pitch": 0, "yaw": 100, "type": "scene", "sceneId": "scene4", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Main Gate" } 
+                ]
+            },
+            "scene4": {
+                "type": "equirectangular", "panorama": "images/pano4.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [ 
+                    { "pitch": 0, "yaw": 100, "type": "scene", "sceneId": "scene5", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Parking Entry" } 
+                ]
+            },
+            "scene5": {
+                "type": "equirectangular", "panorama": "images/pano5.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [ 
+                    { "pitch": 0, "yaw": 100, "type": "scene", "sceneId": "scene6", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Parking Circle" } 
+                ]
+            },
+            "scene6": {
+                "type": "equirectangular", "panorama": "images/pano6.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [ 
+                    { "pitch": 0, "yaw": 100, "type": "scene", "sceneId": "scene7", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Entrance from Lawn" } 
+                ]
+            },
+            "scene7": {
+                "type": "equirectangular", "panorama": "images/pano7.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [ 
+                    { "pitch": 0, "yaw": 100, "type": "scene", "sceneId": "scene8", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Pratishthan front view" } 
+                ]
+            },
+            "scene8": {
+                "type": "equirectangular", "panorama": "images/pano8.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [ 
+                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene9", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Main Lawn Stage" },
+                    { "pitch": 0, "yaw": 100, "type": "scene", "sceneId": "scene10", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Golden Gate" } 
+                ]
+            },
+            "scene9": {
+                "type": "equirectangular", "panorama": "images/pano9.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [
+                    { "pitch": -13, "yaw": 26, "type": "scene", "sceneId": "scene10", "cssClass": "custom-arrow arrow-up", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Golden Gate" }
+                ]
+            },
+            "scene10": {
+                "type": "equirectangular", "panorama": "images/pano10.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [
+                    { "pitch": 0, "yaw": -12, "type": "scene", "sceneId": "scene11", "cssClass": "custom-arrow arrow-up", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Ganesh Dwar" }
+                ]
+            },
+            "scene11": {
+                "type": "equirectangular", "panorama": "images/pano11.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [
+                    { "pitch": -3, "yaw": -43, "type": "scene", "sceneId": "scene10", "cssClass": "custom-arrow arrow-left", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Golden Gate" },
+                    { "pitch": -1, "yaw": 32, "type": "scene", "sceneId": "scene12", "cssClass": "custom-arrow arrow-right", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Quawalli Hall" }
+                ]
+            },
+            "scene12": {
+                "type": "equirectangular", "panorama": "images/pano12.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [
+                    { "pitch": -11, "yaw": -35, "type": "scene", "sceneId": "scene11", "cssClass": "custom-arrow arrow-left", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Ganesh Dwar" }
+                ]
+            },
+            "scene13": {
+                "type": "equirectangular", "panorama": "images/pano13.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [
+                    { "pitch": -5, "yaw": 21, "type": "scene", "sceneId": "scene14", "cssClass": "custom-arrow arrow-up", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Back side Pratishthan Office" }
+                ]
+            },
+            "scene14": {
+                "type": "equirectangular", "panorama": "images/pano14.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [ 
+                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene13", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Umbrella Tree" },
+                    { "pitch": 0, "yaw": 100, "type": "scene", "sceneId": "scene15", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Back side Garden" } 
+                ]
+            },
+            "scene15": {
+                "type": "equirectangular", "panorama": "images/pano15.jpg", "pitch": 0, "yaw": 0,
+                "hotSpots": [ 
+                    { "pitch": 0, "yaw": -100, "type": "scene", "sceneId": "scene14", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Back side Pratishthan" },
+                    { "pitch": 0, "yaw": 100, "type": "scene", "sceneId": "scene1", "cssClass": "custom-arrow", "createTooltipFunc": hotspotTooltip, "createTooltipArgs": "Top View" } 
+                ]
+            }
+        }
+    });
+
+    function changeScene(sceneId) {
+        viewer.loadScene(sceneId);
+        document.getElementById('top-title').innerText = sceneTitles[sceneId];
+    }
+
+    viewer.on('scenechange', function(sceneId) {
+        document.getElementById('top-title').innerText = sceneTitles[sceneId];
+    });
+
+</script>
+</body>
+</html>
