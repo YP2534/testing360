@@ -102,7 +102,7 @@
         .playlist-text { font-size: 12px; color: #a1a1aa; text-align: right; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;}
 
         /* ---------------------------------------------------
-           NEW BOTTOM RIGHT VOLUME CONTROLS (+ / -)
+           NEW BOTTOM RIGHT ZOOM CONTROLS (+ / -)
            --------------------------------------------------- */
         #bottom-right-controls {
             position: absolute;
@@ -240,7 +240,7 @@
     </div> 
 </div>
 
-<!-- Volume and Music Dropdown Menu (No Plus/Minus here) -->
+<!-- Volume and Music Dropdown Menu -->
 <div id="volume-dropdown">
     <div class="vol-row">
         <!-- Play / Pause Icon -->
@@ -258,10 +258,10 @@
     <div class="playlist-text">By: PlayList</div>
 </div>
 
-<!-- Floating Plus / Minus Volume Controls at Bottom Right -->
+<!-- Floating Plus / Minus Zoom Controls at Bottom Right -->
 <div id="bottom-right-controls">
-    <div class="br-btn" onclick="stepVolume(10)">+</div>
-    <div class="br-btn" onclick="stepVolume(-10)">-</div>
+    <div class="br-btn" onclick="zoomPanorama(-15)">+</div>
+    <div class="br-btn" onclick="zoomPanorama(15)">-</div>
 </div>
 
 <div id="side-menu">
@@ -369,12 +369,21 @@
         document.getElementById('vol-slider').value = val;
     }
 
-    function stepVolume(step) {
-        const slider = document.getElementById('vol-slider');
-        let current = parseInt(slider.value);
-        let newVal = Math.max(0, Math.min(100, current + step));
-        slider.value = newVal;
-        changeVolume(newVal);
+    // --- ZOOM CONTROL LOGIC ---
+    function zoomPanorama(step) {
+        if (viewer) {
+            // Get current Field of View
+            let currentHfov = viewer.getHfov();
+            // Calculate new Field of View
+            let newHfov = currentHfov + step;
+            
+            // Limit zoom in (min HFOV) and zoom out (max HFOV)
+            if (newHfov < 40) newHfov = 40;   
+            if (newHfov > 120) newHfov = 120; 
+            
+            // Set the new zoom level
+            viewer.setHfov(newHfov);
+        }
     }
 
     // --- FIX FOR BROWSERS BLOCKING AUTOPLAY ---
